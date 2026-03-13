@@ -1,0 +1,53 @@
+{
+  "candidate": {
+    "name": { "zh": "<string>", "en": "<string>" },
+    "contact": {
+      "phone": "<string>",
+      "email": "<string>"
+    },
+    "target_role": "<string | null>"
+  },
+
+  "summary": {
+    "core_competencies": ["<string>"],
+    "highlights": ["<string>"]
+  },
+
+  "work_experience": [
+    {
+      "company": "<string>",
+      "department": "<string | null>",
+      "title": "<string>",
+      "start": "<YYYY-MM>",
+      "end": "<YYYY-MM | null>",
+      "is_current": "<boolean>",
+      "responsibilities": ["<string: role scope, one sentence each>"],
+      "achievements": [
+        "<string: original quote or close paraphrase with quantitative result embedded inline>"
+      ],
+      "keywords": ["<string: domain/tech/method tags>"]
+    }
+  ],
+
+  "education": [
+    {
+      "institution": "<string>",
+      "degree": "<string>",
+      "major": "<string>",
+      "minor": "<string[] | null>",
+      "gpa": "<string | null>",
+      "start": "<YYYY>",
+      "end": "<YYYY>"
+    }
+  ],
+
+  "skills": {
+    "<category>": ["<string>"]
+  },
+
+  "tags": {
+    "seniority":  "<'junior' | 'mid' | 'mid-senior' | 'senior' | 'lead'>",
+    "domain":     ["<string>"],
+    "strength":   ["<string>"]
+  }
+}
