@@ -140,11 +140,13 @@ Evaluate two things:
 
 **Skills & experience alignment**: How well does the candidate's demonstrated background match what the role needs? Consider required skills, preferred skills, seniority, and domain.
 
-**Credibility-adjusted fit**: A candidate with a 4/10 credibility score and apparent 80% skill match is not actually an 80% fit — their claims can't be trusted. Factor the credibility score into your overall assessment. The lower the credibility, the wider the uncertainty band on fit.
+**Credibility-adjusted fit**: A candidate with a 4/10 credibility score and apparent 80% skill match is not actually an 80% fit — their claims can't be trusted. Factor the credibility score into your overall assessment. The lower the credibility, the wider the uncertainty band on fit. Note: candidates scoring below 7 on credibility are hard-capped at "Maybe" in the recommendation step (see below).
 
 ### Recommendation
 
 Give one of: **Strong yes** / **Yes** / **Maybe** / **No**
+
+**Credibility gate**: If the credibility score from Stage 2 is below 7, the recommendation caps at **Maybe** — no matter how strong the skills alignment looks. The reasoning is simple: a great-looking skill match is only valuable if the underlying claims are trustworthy. A candidate scoring 6 or below hasn't earned enough confidence to warrant advancing without verification. When this gate activates, say so explicitly in the rationale (e.g., "Capped at Maybe due to credibility score of 5 — verify key claims before advancing").
 
 Then 2–3 sentences of plain-language rationale a hiring manager could forward directly. If credibility concerns are the main reason for a lower recommendation, say that explicitly — it's actionable information.
 
@@ -256,3 +258,4 @@ No JSON code blocks. No bullet-point deep-dives. The report should fit comfortab
 | Discover database before writing | Prevents accidental creation of `recruiting` when `recruitment` already exists — a common source of orphaned data |
 | $set + $setOnInsert pattern | Re-screens overwrite stale data while preserving `created_at` for candidate-pipeline analytics |
 | Retry once on transient errors only | Balances reliability against wasting time on errors that won't self-resolve (auth, validation) |
+| Credibility < 7 caps fit at Maybe | A strong skill match means nothing if the resume's claims can't be trusted — forces verification before advancing |
