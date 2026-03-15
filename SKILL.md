@@ -7,8 +7,11 @@ description: >
   "what's this person's background", "is this candidate legit", or "screen this
   applicant". Always runs full extraction + credibility scoring. Also triggers for
   batch screening, shortlisting, ranking candidates, or any hiring workflow involving
-  actual resume files. Keywords: resume, CV, candidate, applicant, screen, hire,
-  shortlist, credibility, background check, accomplishments.
+  actual resume files. Also triggers when the user asks for screening stats or a
+  weekly summary of candidate screenings (e.g., "how did screening go this week",
+  "weekly summary", "show me screening progress"). Keywords: resume, CV, candidate,
+  applicant, screen, hire, shortlist, credibility, background check, accomplishments,
+  weekly summary, screening stats.
   Do NOT trigger for general HR policy questions, salary surveys, or org-chart work
   that doesn't involve a resume file.
 ---
@@ -19,12 +22,16 @@ Schema template: `resume_schema_template.json`
 
 ## Workflow overview
 
-Every resume goes through three stages, always in this order:
+Every resume goes through four stages, always in this order:
 
 1. **Extract** — parse the resume into structured JSON
 2. **Credibility screen** — score and flag suspicious claims (always runs, even without a JD)
 3. **Role fit** — compare against a target role (uses JD if provided; infers target role otherwise)
 4. **Save to MongoDB** — attempt by default; report outcome either way
+
+There is also an **opt-in** reporting mode:
+
+5. **Weekly summary** — aggregate screening stats from MongoDB. **Only runs when the user explicitly asks** (e.g., "show me this week's screening stats", "weekly summary", "how did screening go"). Never run this during a normal resume screening — it costs extra tokens and the user didn't ask for it.
 
 ---
 
@@ -244,6 +251,51 @@ No JSON code blocks. No bullet-point deep-dives. The report should fit comfortab
 
 ---
 
+## Stage 5: Weekly Summary (opt-in only)
+
+**When to run**: Only when the user explicitly requests screening stats or a weekly summary. Trigger phrases include "weekly summary", "screening stats", "how many candidates this week", "show me progress", or similar. If the user is uploading a resume or asking you to screen someone, do NOT run this — just do Stages 1–4.
+
+**When NOT to run**: During any normal resume screening flow. This stage is entirely separate from the screening pipeline. If in doubt, don't run it.
+
+### 5.1 — Determine the time window
+
+Default to the last 7 days (from now). If the user specifies a different window ("this month", "last two weeks", "since Monday"), respect that. Use the `updated_at` field for filtering since it reflects the most recent screening run per candidate.
+
+### 5.2 — Query MongoDB
+
+Use the same database and collection discovered in Stage 4 (`recruiting.candidates` by default). Run a `find` query filtered by `updated_at` within the target window. Pull these fields for each document: `candidate.name`, `target_role`, `credibility_score`, `recommendation`, `updated_at`.
+
+If the MongoDB MCP tool is unavailable or the query fails, say so and stop — there's nothing to summarize without data.
+
+### 5.3 — Compute metrics
+
+From the returned documents, compute:
+
+- **Total screened**: count of documents in the window
+- **Recommendation breakdown**: count of Strong yes / Yes / Maybe / No
+- **Pass rate**: percentage of Strong yes + Yes out of total
+- **Average credibility score**: mean across all candidates, rounded to one decimal
+- **Credibility distribution**: how many scored 8+, 5–7, and below 5
+- **Roles screened**: list of distinct `target_role` values
+
+### 5.4 — Output format
+
+Keep it compact — this is a status check, not a report.
+
+```
+📊 Screening Summary · [start date] – [end date]
+
+Screened: [N] candidates
+Passed: [X] (Strong yes: [a], Yes: [b]) · Maybe: [c] · No: [d]
+Pass rate: [X%]
+Avg credibility: [X.X]/10 (high 8+: [n] · mid 5–7: [n] · low <5: [n])
+Roles: [role1], [role2], ...
+```
+
+If there are zero candidates in the window, just say: "No screenings recorded in the last 7 days."
+
+---
+
 ## Design rationale
 
 | Decision | Why |
@@ -259,3 +311,4 @@ No JSON code blocks. No bullet-point deep-dives. The report should fit comfortab
 | $set + $setOnInsert pattern | Re-screens overwrite stale data while preserving `created_at` for candidate-pipeline analytics |
 | Retry once on transient errors only | Balances reliability against wasting time on errors that won't self-resolve (auth, validation) |
 | Credibility < 7 caps fit at Maybe | A strong skill match means nothing if the resume's claims can't be trusted — forces verification before advancing |
+| Weekly summary is opt-in only | Normal screenings shouldn't waste tokens on aggregation the user didn't ask for — keeps the default path fast and cheap |
