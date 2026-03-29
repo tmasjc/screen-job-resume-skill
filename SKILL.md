@@ -39,7 +39,40 @@ There is also an **opt-in** reporting mode:
 
 ### Step 1 — Read the file
 
-Resumes arrive as PDF, DOCX, image, or pasted text. Use the appropriate tool. For scanned images, infer what you can. Never refuse due to format.
+Resumes arrive as PDF, DOCX, image, or pasted text. **For PDF files, always use LiteParse** via the `bash_tool`. For everything else, use the appropriate native tool. Never refuse due to format.
+
+#### PDF files → LiteParse (strict requirement)
+
+Use the `lit` CLI to extract text from any `.pdf` resume. This is the **only** supported method for PDFs — do not fall back to base64/native vision parsing.
+
+**Standard extraction:**
+```bash
+lit parse /mnt/user-data/uploads/<filename>.pdf --format text --no-ocr -q
+```
+
+**If the text output looks garbled or truncated** (e.g., multi-column layouts, tables), switch to JSON and extract the `text` fields:
+```bash
+lit parse /mnt/user-data/uploads/<filename>.pdf --format json --no-ocr -q
+```
+
+**Ensure `lit` is installed before first use:**
+```bash
+which lit || npm i -g @llamaindex/liteparse
+```
+Run this check once at the start of the workflow. If installation fails, report it to the user and stop — do not attempt to parse the PDF without LiteParse.
+
+**Parse failure handling:**
+If `lit parse` exits non-zero, report: `❌ LiteParse failed to read the PDF. Ask the user to re-upload or paste the resume as plain text.` Do not attempt to parse via vision.
+
+#### Non-PDF files
+
+| Format | Tool |
+|--------|------|
+| DOCX | `bash_tool` with `python-docx` or the native `view` tool if text is already in context |
+| Image (JPG/PNG) | Native vision — infer what you can from the visible text |
+| Pasted text | Already in context — use directly |
+
+For scanned images, infer what you can. Never refuse due to format.
 
 ### Step 2 — Map to schema
 
@@ -300,6 +333,7 @@ If there are zero candidates in the window, just say: "No screenings recorded in
 
 | Decision | Why |
 |---|---|
+| LiteParse for all PDFs | Native vision parsing degrades on multi-column layouts, tables, and scanned PDFs. LiteParse handles all these cases reliably and returns clean text that maps accurately to schema fields. |
 | Credibility screen always runs | Resume fraud and inflation are pervasive. Every candidate should be assessed, not just suspicious ones. |
 | 1–10 score instead of pass/fail | Gives hiring managers a usable signal with nuance — a 6 and a 3 warrant different responses |
 | Role fit is credibility-adjusted | A high skill match means little if the underlying claims are unreliable |
